@@ -1663,7 +1663,7 @@ def _default_demo_batch_candidates() -> list[Path]:
     candidates.extend(
         [
             Path("/var/lib/neurotrust-ms/demo_data/test_1"),
-            Path("/Users/namikhassan/Downloads/test 1"),
+            Path.home() / "Downloads" / "test 1",
             Path.home() / "Downloads" / "neurotrust_msseg_batch_nnUNet_20260709_123200",
             Path("backend/data/msseg_local_batch_validation_a9539b"),
         ]
@@ -1726,7 +1726,7 @@ def _demo_upload_fields(root: Path, cases: list[dict]) -> list[dict]:
     field_defs = [
         ("raw_mris", "Raw MRIs", "raw_mris", "Primary MRI volume used for validation geometry and viewer base image."),
         ("gts", "Expert GT masks", "gts", "Primary expert lesion mask used as ground truth."),
-        ("predictions", "AI prediction masks", "predictions", "One-model prediction mask validated against GT."),
+        ("predictions", "Prediction masks", "predictions", "One-model prediction mask validated against GT."),
         ("expert_2_masks", "Second expert masks", "expert_2_masks_test_only", "Test-only derived support file for reader-variability features."),
         ("probability_maps", "Probability maps", "probability_maps_test_only", "Test-only derived support file for confidence-map features."),
         ("uncertainty_maps", "Uncertainty maps", "uncertainty_maps_test_only", "Test-only derived support file for uncertainty features."),
@@ -1923,8 +1923,8 @@ def _run_five_case_demo(*, email: str) -> dict:
                 "anatomy_labelmaps_optional",
                 "metadata",
             ],
-            "local_path": "/Users/namikhassan/Downloads/test 1",
-            "ec2_path": "/var/lib/neurotrust-ms/demo_data/test_1",
+            "local_path": "~/Downloads/test 1",
+            "server_path": "/var/lib/neurotrust-ms/demo_data/test_1",
         },
     )
 

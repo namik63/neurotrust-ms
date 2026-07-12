@@ -264,12 +264,11 @@ export function ValidationWorkspace({
           <h2>{mode === "simple_demo" ? "Simple one-case demo" : mode === "five_case_demo" ? "Prepared 5-case demo" : "Upload validation evidence"}</h2>
         </div>
         {mode === "simple_demo" ? (
-          <div className="empty-state">The backend generates one demo MRI, expert GT, AI prediction, second expert mask, and toy anatomy labelmap. Use this when you want the fastest possible report.</div>
+          <div className="empty-state">The backend generates one demo MRI, expert GT, prediction mask, second expert mask, and toy anatomy labelmap. Use this when you want the fastest possible report.</div>
         ) : mode === "five_case_demo" ? (
           <div className="empty-state">
-            The backend loads the prepared 5-case bundle from <code>/Users/namikhassan/Downloads/test 1</code> locally, or
-            <code> /var/lib/neurotrust-ms/demo_data/test_1</code> on EC2. The Research Appendix will show exactly which folder
-            was mapped into each upload field before validation runs.
+            The backend loads the prepared 5-case bundle from the configured demo-data folder. The Research Appendix shows exactly
+            which source folder was mapped into each upload field before validation runs.
           </div>
         ) : (
           <div className="drop-grid">

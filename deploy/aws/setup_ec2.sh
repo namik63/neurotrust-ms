@@ -4,7 +4,7 @@ set -euo pipefail
 APP_ROOT="${APP_ROOT:-/opt/neurotrust-ms}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 NODE_MAJOR_REQUIRED="${NODE_MAJOR_REQUIRED:-20}"
-PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-http://3.109.202.213}"
+PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-http://localhost}"
 JOB_ROOT="${JOB_ROOT:-/var/lib/neurotrust-ms/jobs}"
 
 if [[ "$(uname -s)" != "Linux" ]]; then

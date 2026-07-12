@@ -1,34 +1,32 @@
-# NeuroTrust-MS AWS EC2 deployment
+# NeuroTrust-MS Ubuntu deployment
 
-This deploys the current NeuroTrust-MS prototype on the EC2 instance:
+This guide describes a generic Ubuntu/Nginx deployment for NeuroTrust-MS.
 
-- Public IP: `3.109.202.213`
-- SSH user: `ubuntu`
-- App path on EC2: `/opt/neurotrust-ms`
-- Backend: FastAPI/Uvicorn on `127.0.0.1:8000`
-- Frontend: static Vite build served by Nginx
-- Public URL: `http://3.109.202.213/`
+Runtime layout:
 
-The hosted demo is configured for:
+- app path: `/opt/neurotrust-ms`
+- backend: FastAPI/Uvicorn on `127.0.0.1:8000`
+- frontend: static Vite build served by Nginx
+- runtime data: `/var/lib/neurotrust-ms`
+- prepared demo data: `/var/lib/neurotrust-ms/demo_data/test_1`
+- access/history database: `/var/lib/neurotrust-ms/access_log.sqlite3`
 
-- maximum 5 validation cases per run
-- one validation job at a time
-- upload limit 2048 MB per file
-- temporary runtime storage under `/var/lib/neurotrust-ms/jobs`
-- automatic cleanup after 4 hours
-- Nginx basic-auth disabled by default
-- in-app email/password gate with per-email password hashes
-- login/session/history database stored privately at `/var/lib/neurotrust-ms/access_log.sqlite3`
-- server-side session expiry, hashed session tokens, and protected saved validation history
-- optional dual-header database audit verification for operators
+Hosted defaults:
 
-## 1. Mac Terminal: upload project to EC2
+- maximum 5 validation cases per run;
+- one validation job at a time;
+- 2048 MB upload limit;
+- temporary job cleanup after 4 hours;
+- server-level basic auth disabled by default;
+- app-level email/password login enabled.
 
-Run this on your Mac, not inside the EC2 terminal:
+## 1. Upload the project
+
+Run this from your local machine, replacing the placeholders:
 
 ```bash
 rsync -avz --progress \
-  -e "ssh -i /Users/namikhassan/Downloads/NeuroTrustMS-Key.pem" \
+  -e "ssh -i <PATH_TO_KEY.pem> -o IdentitiesOnly=yes" \
   --exclude "node_modules" \
   --exclude ".venv" \
   --exclude "__pycache__" \
@@ -37,21 +35,19 @@ rsync -avz --progress \
   --exclude "data" \
   --exclude "backend/data" \
   --exclude "frontend/dist" \
-  "/Users/namikhassan/Documents/New project/neurotrust-ms/" \
-  ubuntu@3.109.202.213:/home/ubuntu/neurotrust-ms/
+  "<LOCAL_NEUROTRUST_MS_FOLDER>/" \
+  ubuntu@<SERVER_PUBLIC_IP>:/home/ubuntu/neurotrust-ms/
 ```
 
-If this times out, check the EC2 security group allows inbound SSH port `22` from your current IP.
+## 2. Move the project into `/opt`
 
-## 2. EC2 Terminal: move project into `/opt`
-
-SSH into EC2:
+SSH into the server:
 
 ```bash
-ssh -i /Users/namikhassan/Downloads/NeuroTrustMS-Key.pem ubuntu@3.109.202.213
+ssh -i <PATH_TO_KEY.pem> ubuntu@<SERVER_PUBLIC_IP>
 ```
 
-Then run this on EC2:
+Then run:
 
 ```bash
 sudo rm -rf /opt/neurotrust-ms
@@ -62,54 +58,63 @@ cd /opt/neurotrust-ms
 chmod +x deploy/aws/*.sh
 ```
 
-## 3. EC2 Terminal: first setup
+## 3. First setup
 
-Run:
+Set the public origin for the server, then run setup:
 
 ```bash
 cd /opt/neurotrust-ms
-./deploy/aws/setup_ec2.sh
+PUBLIC_ORIGIN="http://<SERVER_PUBLIC_IP>" ./deploy/aws/setup_ec2.sh
 ```
 
-When it finishes, test:
+Test locally on the server:
 
 ```bash
 curl -i http://127.0.0.1:8000/api/health
 curl -I http://127.0.0.1/
 ```
 
-From your browser, open:
+Open in a browser:
 
 ```text
-http://3.109.202.213/
+http://<SERVER_PUBLIC_IP>/
 ```
 
-If the browser cannot open it, check the EC2 security group allows inbound HTTP port `80`.
+If the browser cannot open the site, confirm that inbound HTTP port `80` is allowed by the server firewall or cloud security group.
 
-## 4. Mac + EC2: upload the prepared 5-case demo bundle
+## 4. Upload the prepared 5-case demo bundle
 
-The 5-case demo uses the same fields as a real batch upload. Locally, the app reads:
-
-```text
-/Users/namikhassan/Downloads/test 1
-```
-
-On EC2, place that same bundle here:
+The prepared demo bundle should be placed at:
 
 ```text
 /var/lib/neurotrust-ms/demo_data/test_1
 ```
 
-From Mac Terminal:
+Expected bundle layout:
+
+```text
+test_1/
+  raw_mris/
+  gts/
+  predictions/
+  expert_2_masks_test_only/
+  probability_maps_test_only/
+  uncertainty_maps_test_only/
+  freesurfer_subject_files/
+  anatomy_labelmaps_optional/
+  metadata/
+```
+
+Upload from your local machine:
 
 ```bash
 rsync -avz --progress \
-  -e "ssh -i /Users/namikhassan/Downloads/NeuroTrustMS-Key.pem -o IdentitiesOnly=yes" \
-  "/Users/namikhassan/Downloads/test 1/" \
-  ubuntu@3.109.202.213:/home/ubuntu/neurotrust-test-1/
+  -e "ssh -i <PATH_TO_KEY.pem> -o IdentitiesOnly=yes" \
+  "<LOCAL_TEST_1_FOLDER>/" \
+  ubuntu@<SERVER_PUBLIC_IP>:/home/ubuntu/neurotrust-test-1/
 ```
 
-Then on EC2:
+Install it on the server:
 
 ```bash
 sudo mkdir -p /var/lib/neurotrust-ms/demo_data/test_1
@@ -120,44 +125,37 @@ echo 'NEUROTRUST_DEMO_BATCH_ROOT=/var/lib/neurotrust-ms/demo_data/test_1' | sudo
 sudo systemctl restart neurotrust-ms
 ```
 
-Expected field mapping:
+Field mapping used by the app:
 
-- `raw_mris/` → Raw MRIs
-- `gts/` → Expert GT masks
-- `predictions/` → AI prediction masks
-- `expert_2_masks_test_only/` → Second expert masks
-- `probability_maps_test_only/` → Probability maps
-- `uncertainty_maps_test_only/` → Uncertainty maps
-- `freesurfer_subject_files/` → FreeSurfer subject files
-- `anatomy_labelmaps_optional/` → Optional fallback anatomy labelmaps
-- `metadata/` plus root README/checksum/manifest files → bundle transparency documents
+- `raw_mris/` -> Raw MRIs
+- `gts/` -> Expert GT masks
+- `predictions/` -> Prediction masks
+- `expert_2_masks_test_only/` -> Second expert masks
+- `probability_maps_test_only/` -> Probability maps
+- `uncertainty_maps_test_only/` -> Uncertainty maps
+- `freesurfer_subject_files/` -> FreeSurfer subject files
+- `anatomy_labelmaps_optional/` -> Optional fallback anatomy labelmaps
+- `metadata/` -> bundle metadata
 
-The Research Appendix in the app reports this mapping and each case's actual file pairing after the demo runs.
+The Research Appendix reports this mapping after the demo runs.
 
-## 5. EC2 Terminal: optional server-level password
+## 5. Optional server-level password
 
-By default, the deployment disables the browser pop-up password prompt. The only normal login is the app email/password screen.
+By default, the deployment does not add a browser-level password prompt. The app uses its own email/password gate.
 
-Only run this if you intentionally want an extra Nginx basic-auth prompt before the app loads:
+To add an additional Nginx basic-auth prompt:
 
 ```bash
 sudo /opt/neurotrust-ms/deploy/aws/create_basic_auth.sh
 ```
 
-Use:
+## 6. Updating after code changes
 
-- username: `neurotrust`
-- password: the password you type when prompted
-
-The app itself also has an email/password access gate. First login with an email creates that email's password record; repeat logins with the same email must use the same password.
-
-## 6. Updating after local code changes
-
-From Mac Terminal:
+Upload the project again:
 
 ```bash
 rsync -avz --progress \
-  -e "ssh -i /Users/namikhassan/Downloads/NeuroTrustMS-Key.pem" \
+  -e "ssh -i <PATH_TO_KEY.pem> -o IdentitiesOnly=yes" \
   --exclude "node_modules" \
   --exclude ".venv" \
   --exclude "__pycache__" \
@@ -166,11 +164,11 @@ rsync -avz --progress \
   --exclude "data" \
   --exclude "backend/data" \
   --exclude "frontend/dist" \
-  "/Users/namikhassan/Documents/New project/neurotrust-ms/" \
-  ubuntu@3.109.202.213:/home/ubuntu/neurotrust-ms/
+  "<LOCAL_NEUROTRUST_MS_FOLDER>/" \
+  ubuntu@<SERVER_PUBLIC_IP>:/home/ubuntu/neurotrust-ms/
 ```
 
-Then on EC2:
+Then run on the server:
 
 ```bash
 sudo systemctl stop neurotrust-ms || true
@@ -224,35 +222,31 @@ sudo /opt/neurotrust-ms/deploy/aws/cleanup_jobs.sh
 
 ## 8. Common failures
 
-### `ssh: connect to host 3.109.202.213 port 22: Connection timed out`
+### SSH timeout
 
-You ran the right command, but AWS is blocking SSH. Fix the EC2 security group inbound rule for port `22`.
+The server is not reachable on port `22`. Check the firewall or cloud security-group rule.
 
-### `Identity file ... not accessible`
+### Identity file not accessible
 
-You ran the Mac upload command from inside EC2. The key path `/Users/namikhassan/...` only exists on your Mac.
+The private key path is wrong or the upload command is being run from the wrong machine.
 
-### `502 Bad Gateway`
+### 502 Bad Gateway
 
-Nginx is up but FastAPI is not. Run:
+Nginx is running but the FastAPI service is not healthy:
 
 ```bash
 sudo journalctl -u neurotrust-ms -n 120 --no-pager
 ```
 
-### Browser cannot open `http://3.109.202.213/`
+### Browser cannot open the site
 
-Usually port `80` is blocked. Add EC2 security group inbound rule:
-
-- Type: HTTP
-- Port: 80
-- Source: your IP for private demo, or `0.0.0.0/0` if judges need public access
+Check inbound HTTP port `80`.
 
 ### Upload rejected
 
 Hosted limits are intentional:
 
-- maximum 5 cases per run
-- one job at a time
-- allowed file types: `.nii`, `.nii.gz`, `.mgz`, `.json`, `.csv`, `.txt`
-- max file size: 2048 MB
+- maximum 5 cases per run;
+- one job at a time;
+- allowed file types: `.nii`, `.nii.gz`, `.mgz`, `.json`, `.csv`, `.txt`;
+- max file size: 2048 MB.
