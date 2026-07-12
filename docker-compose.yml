@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    container_name: neurotrust-ms-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build: ./frontend
+    container_name: neurotrust-ms-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+

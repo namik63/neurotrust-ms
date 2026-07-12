@@ -1,0 +1,39 @@
+{
+  "version": "2026-07-09",
+  "method": "FreeSurfer/SynthSeg-compatible label-name and label-id grouping for QA localization only.",
+  "locations": {
+    "ventricular_system": {
+      "label_ids": [4, 5, 14, 15, 24, 31, 43, 44, 63],
+      "name_patterns": ["ventricle", "choroid", "csf"]
+    },
+    "cortex": {
+      "label_ids": [3, 42],
+      "label_id_ranges": [[1000, 2999]],
+      "name_patterns": ["cortex", "ctx", "cortical", "ribbon"]
+    },
+    "cerebral_white_matter": {
+      "label_ids": [2, 41],
+      "name_patterns": ["white-matter", "wm", "cerebral-white"]
+    },
+    "infratentorial": {
+      "label_ids": [7, 8, 16, 46, 47],
+      "name_patterns": ["brain-stem", "brainstem", "cerebell"]
+    },
+    "corpus_callosum": {
+      "label_ids": [251, 252, 253, 254, 255],
+      "name_patterns": ["corpus-callosum", "cc_", "callosum"]
+    }
+  },
+  "primary_location_priority": [
+    "infratentorial",
+    "juxtacortical_or_cortical",
+    "periventricular",
+    "corpus_callosum",
+    "deep_white_matter_or_other",
+    "unknown"
+  ],
+  "thresholds_mm": {
+    "periventricular_distance": 3.0,
+    "juxtacortical_distance": 3.0
+  }
+}
